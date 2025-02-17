@@ -5,6 +5,10 @@
 ## Notes:         R file to read in HCRIS data (1996 version of forms)
 ########################################################################################
 
+# Preliminaries -----------------------------------------------------------
+# loading the packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata)
 
 ########################################################################################
 ## List variables and locations
@@ -39,7 +43,7 @@ colnames(hcris.vars)=c("variable","WKSHT_CD","LINE_NUM","CLMN_NUM","source")
 ## -- note: v1996 of HCRIS forms run through 2011 due to lags in processing and hospital
 ##    fiscal years
 ########################################################################################
-for (i in 1996:1997) {
+for (i in 1996:1998) {
   HCRIS.alpha=read_csv(paste0("data/input/HCRIS_v1996/HospitalFY",i,"/hosp_",i,"_ALPHA.CSV"),
                        col_names=c('RPT_REC_NUM','WKSHT_CD','LINE_NUM','CLMN_NUM','ITM_VAL_NUM'))
   HCRIS.numeric=read_csv(paste0("data/input/HCRIS_v1996/HospitalFY",i,"/hosp_",i,"_NMRC.CSV"),
@@ -68,8 +72,8 @@ for (i in 1996:1997) {
               by="report")
   }
   assign(paste("final.reports.",i,sep=""),final.reports)
-  if (i==1998) {
-    final.hcris.v1996=final.reports.1998
+  if (i==1996) {
+    final.hcris.v1996=final.reports.1996
   } else {
     final.hcris.v1996=rbind(final.hcris.v1996,get(paste("final.reports.",i,sep="")))
   }

@@ -11,21 +11,52 @@ report_counts <- duplicate.hcris %>%
     summarise(num_hospitals = n_distinct(provider_number))
 
 ## creating a line graph
-ggplot(report_counts, aes(x = fyear, y = num_hospitals)) +
+table1 = ggplot(report_counts, aes(x = fyear, y = num_hospitals)) +
         geom_line() +
         labs(title = "Number of Hospitals Over Time",
                          x = "Fiscal Year",
                          y = "Number of Hospitals") +
             theme_minimal()
 
+dup.count <- final.hcris %>%
+    add_count
+
+ggsave("submission2/Q1.png", plot = table1, width = 6, height = 5, dpi = 300, bg = "white")
+
 # Question 2: Unique Hospital IDs
 unique_hospital_count <- length(unique(final.hcris.data$provider_number))
 print(unique_hospital_count)
 # 6747
 
+#Question 2, anotha one
+data=read_rds("data/output/HCRIS_Data.rds")
+unique_counts <- data %>%
+  group_by(year) %>%
+  summarise(num_unique_providers = n_distinct(provider_number), .groups = 'drop')
+
+
+library(flextable)
+
+# Create a nice table
+table <- unique_counts %>%
+  flextable() %>%
+  set_caption("Unique Providers Per Year") %>%
+  theme_vanilla() %>%
+  bg(part = "all", bg = "white") %>%
+  set_table_properties(width = 1, layout = "autofit") %>% # Auto-fit columns
+  font(fontname = "Arial") %>% # Set a nice readable font
+  align(align = "center", part = "all") # Center text
+
+# Save as PNG
+install.packages("webshot2") # Install webshot2 for saving images
+library("webshot2")
+save_as_image(table, path = "unique_providers_per_year.png")
+
 # Question 3: Distribution of Total Charges by Year
 final.hcris.data$fyear <- as.factor(final.hcris.data$year)
-ggplot(final.hcris.data, aes(x = fyear, y = log(tot_charges))) + geom_violin(fill = "lightblue", color = "darkblue") + labs(title = "Log-transformed Distribution of Total Charges by Year", x = "Year", y = "Log of Total Charges" ) +theme_minimal() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+table2 = ggplot(final.hcris.data, aes(x = fyear, y = log(tot_charges))) + geom_violin(fill = "lightblue", color = "darkblue") + labs(title = "Log-transformed Distribution of Total Charges by Year", x = "Year", y = "Log of Total Charges" ) +theme_minimal() + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("submission2/Q3.png", plot = table1, width = 6, height = 5, dpi = 300, bg = "white")
+
 
 # Question 4: Distribution of Estimated Prices in Each Year
 final.hcris.data <- final.hcris.data %>%
@@ -46,7 +77,7 @@ final.hcris.data <- final.hcris.data %>%
 
 final.hcris.data$fyear <- as.factor(final.hcris.data$fyear)
 
-ggplot(final.hcris.data, aes(x = fyear, y = price)) +
+table4 = ggplot(final.hcris.data, aes(x = fyear, y = price)) +
     geom_violin(fill = "lightblue", color = "darkblue") +  
     labs(
         title = "Distribution of Estimated Prices by Year",
@@ -55,6 +86,8 @@ ggplot(final.hcris.data, aes(x = fyear, y = price)) +
     ) +
     theme_minimal() +  
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave("submission2/Q4.png", plot = table1, width = 6, height = 5, dpi = 300, bg = "white")
 
 # Question 5: 
 ## Filter for 2012 and define penalty
@@ -87,6 +120,7 @@ results <- data.frame(
 )
 
 print(results)
+
 
 # Question 6: Hospitals into quartiles
 ## Define penalty: HVBP + HRRP < 0
@@ -124,4 +158,4 @@ quartile_summary <- final.hcris.2012 %>%
 print(quartile_summary)
 
 # Save the workspace with all the answers to each of the questions
-save(report_counts, unique_hospital_count, final.hcris.data, final.hcris.2012, mean.pen, mean.nopen, results, quartile_summary, file = "analysis_workspace.Rdata")
+save(report_counts, unique_hospital_count, final.hcris.data, final.hcris.2012, mean.pen, mean.nopen, results, quartile_summary, file = "submission2/analysis_workspace.Rdata")

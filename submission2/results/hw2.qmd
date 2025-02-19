@@ -1,0 +1,76 @@
+---
+title: "Homework 2"
+subtitle: "Research Methods, Spring 2025"
+author: "Megan Zheng"
+header-includes:
+  - \usepackage{xcolor}
+  - \usepackage{float}
+  - \floatplacement{table}{H}
+  - \usepackage{titling}
+  - \pretitle{\begin{center}\LARGE\bfseries}
+  - \posttitle{\end{center}}
+  - \preauthor{\begin{center}\large\color{violet}}
+  - \postauthor{\end{center}}
+format:
+  pdf:
+    output-file: "zheng-m-hwk2-2"
+    output-ext:  "pdf"
+    header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
+---
+
+```{r}
+#| include: false
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
+               scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
+               ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
+               kableExtra)
+```
+
+
+
+```{r}
+#| include: false
+#| eval: true
+
+library(tidyverse)
+load("analysis_workspace.Rdata")
+
+```
+ I am trying plzzz.
+
+
+\newpage
+# Question 1
+How many hospitals filed more than one report in the same year? Show your answer as a line graph of the number of hospitals over time.
+
+# Filter and count hospitals with more than one report in the same year
+hospital_reports <- duplicate.hcris %>%
+    group_by(provider_number, fyear) %>%
+    filter(n() > 1) %>%
+    summarise(num_reports = n()) %>%
+    ungroup() %>%
+    group_by(fyear) %>%
+    summarise(num_hospitals = n_distinct(provider_number))
+
+# Create a line graph
+ggplot(hospital_reports, aes(x = fyear, y = num_hospitals)) +
+    geom_line() +
+    labs(title = "Number of Hospitals Filing More Than One Report in the Same Year",
+             x = "Fiscal Year",
+             y = "Number of Hospitals") +
+    theme_minimal()
+    #| echo: false
+    #| label: line-hospitals
+    #| fig-cap: Number of Hospitals Filing More Than One Report in the Same Year
+
+    ggplot(hospital_reports, aes(x = fyear, y = num_hospitals)) +
+        geom_line() +
+        labs(title = "Number of Hospitals Filing More Than One Report in the Same Year",
+                 x = "Fiscal Year",
+                 y = "Number of Hospitals") +
+        theme_minimal()
+

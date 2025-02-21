@@ -9,6 +9,12 @@ pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table
 
 hcris.data <- readRDS("data/output/HCRIS_Data.rds")
 
+source('submission2/data-code/H1_HCRISv1996.R')
+source('submission2/data-code/H2_HCRISv2010.R')
+source('submission3/data-code/data-code/_HCRIS_Data.R')
+
+# final.hcris.v1996=read_rds('data/output/HCRIS_Data_v1996.rds')
+# final.hcris.v2010=read_rds('data/output/HCRIS_Data_v2010.rds')
 
 # Question 1: Hospital Reports
 ## gathering the data

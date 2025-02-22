@@ -71,7 +71,7 @@ quantiles <- quantile(final.hcris.data$price, c(0.01, 0.99), na.rm = TRUE)
 final.hcris.data <- final.hcris.data %>%
     filter(price >= quantiles[1], price <= quantiles[2])
 
-final.hcris.data$fyear <- as.factor(final.hcris.data$fyear)
+# final.hcris.data$fyear <- as.factor(final.hcris.data$fyear)
 
 q4 = ggplot(final.hcris.data, aes(x = fyear, y = price)) +
     geom_violin(fill = "lightblue", color = "darkblue") +  
@@ -91,6 +91,7 @@ final.hcris.2012 <- final.hcris.data %>% ungroup() %>%
   mutate( hvbp_payment = ifelse(is.na(hvbp_payment), 0, hvbp_payment),
           hrrp_payment = ifelse(is.na(hrrp_payment), 0, abs(hrrp_payment)), 
     penalty = (hvbp_payment - hrrp_payment < 0))
+
 
 # Question 5: 
 ## Filter for 2012 and define penalty

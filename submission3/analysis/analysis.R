@@ -5,7 +5,7 @@ library(gridExtra)
 library(png)
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata, scales)
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table, gdata, scales, ggpubr)
 
 hcris.data <- readRDS("data/output/HCRIS_Data.rds")
 
@@ -204,71 +204,12 @@ q7 <- data.frame(
 
 print(q7)
 
+p <- ggtexttable(q7, rows = NULL, theme = ttheme("mOrange"))
+
+# Save the table as a PNG
+ggsave("submission3/results/q7.png", p, width = 6, height = 3, dpi = 300)
+
 ## CREATE WORKSPACE
 rm(list=c("hcris.data"))
 save.image("submission3/results/hwk2_workspace.Rdata")
 
-# Question 7: Average Treatment Effects
-install.packages("Matching")
-install.packages("MatchIt")
-install.packages("WeightIt")
-
-## Nearest neighbor matching (1-to-1) with inverse variance distance based on quartiles of bed size
-lp.covs <- final.hcris.2012 %>%
-  select(Q1, Q2, Q3, Q4) %>%
-  na.omit()
-
-lp.vars <- final.hcris.2012 %>%
-  select(price, penalty) %>%
-  na.omit()
-
-m.nn.var <- Matching::Match(Y=lp.vars$price,
-                            Tr=lp.vars$penalty,
-                            X=lp.covs,
-                            M=1, 
-                            Weight=1,
-                            estimand="ATE")
-
-ate_nn_var <- m.nn.var$est
-se_nn_var <- m.nn.var$se
-
-# Nearest neighbor matching with Mahalanobis distance
-m.nn.md <- Matching::Match(Y = lp.vars$price,
-                            Tr = lp.vars$penalty,
-                            X = lp.covs,
-                            M = 1,
-                            Weight = 2,
-                            estimand = "ATE")
-
-ate_nn_md <- m.nn.md$est
-se_nn_md <- m.nn.md$se
-
-# Inverse propensity weighting
-logit.model <- glm(penalty ~ Q1 + Q2 + Q3 + Q4, family = binomial, data = final.hcris.2012)
-ps <- fitted(logit.model)
-ipw_weights <- ifelse(final.hcris.2012$penalty == 1, 1 / ps, 1 / (1 - ps))
-ate_ipw <- weighted.mean(lp.vars$price, ipw_weights)
-
-# Simple linear regression
-final.hcris.2012$Q1_interaction <- final.hcris.2012$penalty * final.hcris.2012$Q1
-final.hcris.2012$Q2_interaction <- final.hcris.2012$penalty * final.hcris.2012$Q2
-final.hcris.2012$Q3_interaction <- final.hcris.2012$penalty * final.hcris.2012$Q3
-final.hcris.2012$Q4_interaction <- final.hcris.2012$penalty * final.hcris.2012$Q4
-
-lm_model <- lm(price ~ penalty + Q1 + Q2 + Q3 + Q4 + 
-                 Q1_interaction + Q2_interaction + Q3_interaction + Q4_interaction, 
-               data = final.hcris.2012)
-
-ate_lm <- coef(lm_model)["penalty"]
-
-# Combine results into a table
-q7 <- data.frame(
-  Method = c("Nearest Neighbor Matching (IV)", "Nearest Neighbor Matching (Mahalanobis)", 
-             "Inverse Propensity Weighting", "Simple Linear Regression"),
-  ATE = c(ate_nn_var, ate_nn_md, ate_ipw, ate_lm),
-  SE = c(se_nn_var, se_nn_md, NA, summary(lm_model)$coefficients["penaltyTRUE", "Std. Error"]))
-
-print(q7)
-
-# Save the workspace with all the answers to each of the questions
-save(report_counts, unique_hospital_count, final.hcris.data, final.hcris.2012, mean.pen, mean.nopen, results, quartile_summary, file = "submission2/analysis_workspace.Rdata")

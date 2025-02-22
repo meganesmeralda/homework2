@@ -176,55 +176,25 @@ kable(quartile_summary,
 
 ```{r}
 #| echo: false
-library(knitr)
-library(MatchIt)
-library(survey)
-
-final.hcris.2012 <- final.hcris.2012 %>%
-    mutate(bed_quartile = case_when(
-        Q1 == 1 ~ "Q1",
-        Q2 == 1 ~ "Q2",
-        Q3 == 1 ~ "Q3",
-        Q4 == 1 ~ "Q4"
-    ))
-
-match_iv <- matchit(penalty ~ bed_quartile, data = final.hcris.2012, method = "nearest", distance = "logit")
-matched_data_iv <- match.data(match_iv)
-ate_iv <- with(matched_data_iv, mean(price[penalty == TRUE]) - mean(price[penalty == FALSE]))
-
-match_mahal <- matchit(penalty ~ bed_quartile, data = final.hcris.2012, method = "nearest", distance = "mahalanobis")
-matched_data_mahal <- match.data(match_mahal)
-ate_mahal <- with(matched_data_mahal, mean(price[penalty == TRUE]) - mean(price[penalty == FALSE]))
-
-ps_model <- glm(penalty ~ bed_quartile, data = final.hcris.2012, family = binomial)
-final.hcris.2012$ps <- predict(ps_model, type = "response")
-final.hcris.2012$weight <- ifelse(final.hcris.2012$penalty == TRUE, 1 / final.hcris.2012$ps, 1 / (1 - final.hcris.2012$ps))
-design <- svydesign(ids = ~1, weights = ~weight, data = final.hcris.2012)
-ate_ipw <- svymean(~price, design, subset = penalty == TRUE) - svymean(~price, design, subset = penalty == FALSE)
-
-lm_model <- lm(price ~ penalty * bed_quartile, data = final.hcris.2012)
-ate_lm <- coef(lm_model)["penaltyTRUE"]
-
-q7 <- data.frame(
-    Estimator = c("Nearest Neighbor (Inverse Variance)", "Nearest Neighbor (Mahalanobis)", "Inverse Propensity Weighting", "Linear Regression"),
-    ATE = c(ate_iv, ate_mahal, ate_ipw, ate_lm)
-)
-
-kable(q7, 
-      col.names = c("Method", "ATE", "SE"),
-      caption = "Average Treatment Effect Estimates")
+knitr::include_graphics("q7.png")
 ```
 
 \newpage
 # Question 8
 With these different treatment effect estimators, are the results similar, identical, very different?
 
+The different methods give similar but not identical results. Each method gives a different estimate of how much the penalty affects hospital prices. One method finds an increase of $272, another $428, and one finds no effect at all ($0). These differences happen because each method balances the data in a unique way, but most suggest penalized hospitals charge more.
 
-\newpage
+
+
+\vspace{0.5cm}
 # Question 9
 Do you think you’ve estimated a causal effect of the penalty? Why or why not? (just a couple of sentences)
 
+The penalty might not be the true reason for the price differences. Penalized hospitals already have higher prices on average ($9,685 vs. $9,323 for non-penalized hospitals), so something else could be influencing costs. Since different methods give different answers, we can’t be sure the penalty alone is causing price changes.
 
-\newpage
+\vspace{0.5cm}
 # Question 10
 Briefly describe your experience working with these data (just a few sentences). Tell me one thing you learned and one thing that really aggravated or surprised you.
+
+This data was really interesting to work with, it gave me a chance to work with data as I would in the real world. But this also means I faced all of those challenges. It was frustrating when my data wasn't loading properly, and with so much data to work with, I was constantly fighting a battle with my computer just shutting down in the middle of running a file. 

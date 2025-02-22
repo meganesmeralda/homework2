@@ -9,12 +9,7 @@ pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr, readxl, data.table
 
 hcris.data <- readRDS("data/output/HCRIS_Data.rds")
 
-#source('submission2/data-code/H1_HCRISv1996.R')
-#source('submission2/data-code/H2_HCRISv2010.R')
 source('submission3/data-code/data-code/_HCRIS_Data.R')
-
-# final.hcris.v1996=read_rds('data/output/HCRIS_Data_v1996.rds')
-# final.hcris.v2010=read_rds('data/output/HCRIS_Data_v2010.rds')
 
 # Question 1: Hospital Reports
 ## gathering the data
@@ -63,6 +58,14 @@ final.hcris.data <- final.hcris.data %>%
 
 final.hcris.data <- final.hcris.data %>%
     mutate(price = price_num / price_denom)
+
+
+# Perform the filtering operation
+final.hcris.data <- final.hcris.data %>%
+    filter(price >= quantiles[1], price <= quantiles[2])
+
+# Print the number of rows after filtering
+print(nrow(final.hcris.data))
 
 quantiles <- quantile(final.hcris.data$price, c(0.01, 0.99), na.rm = TRUE)
 final.hcris.data <- final.hcris.data %>%
@@ -193,13 +196,16 @@ lm_model <- lm(price ~ penalty * bed_quartile, data = final.hcris.2012)
 ate_lm <- coef(lm_model)["penaltyTRUE"]
 
 # Present results in a table
-ate_results <- data.frame(
+q7 <- data.frame(
     Estimator = c("Nearest Neighbor (Inverse Variance)", "Nearest Neighbor (Mahalanobis)", "Inverse Propensity Weighting", "Linear Regression"),
     ATE = c(ate_iv, ate_mahal, ate_ipw, ate_lm)
 )
 
-print(ate_results)
+print(q7)
 
+## CREATE WORKSPACE
+rm(list=c("hcris.data"))
+save.image("submission3/results/hwk2_workspace.Rdata")
 
 # Question 7: Average Treatment Effects
 install.packages("Matching")

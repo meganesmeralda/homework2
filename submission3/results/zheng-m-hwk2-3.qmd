@@ -1,0 +1,193 @@
+---
+title: "Homework 2"
+subtitle: "Research in Health Economics, Spring 2025"
+author: "Megan Zheng"
+format:
+    pdf: 
+        output-file: "zheng-m-hwk2-3"
+        output-ext: "pdf"
+        header-includes: 
+            - \usepackage{float}
+            - \floatplacement{table}{H}
+knitr:
+    opts_chunk:
+        warning: false
+
+---
+
+```{r}
+#| include: false
+#| eval: true
+library(tidyverse)
+load("hwk2_workspace.Rdata")
+```
+
+```{r}
+#| include: false
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, readr, readxl, hrbrthemes, fixest,
+               scales, gganimate, gapminder, gifski, png, tufte, plotly, OECD,
+               ggrepel, survey, foreign, devtools, pdftools, kableExtra, modelsummary,
+               kableExtra)
+               
+```
+
+In this assignment, I wil be analyzing the HCRIS data to pull informtion from their reports and estimate ATEs. The analysis and the raw data can be found in another script/document.
+
+The GitHub repository for this work is available [here](https://github.com/meganesmeralda/homework2). Enjoy!
+
+\newpage
+# Summarize the Data
+
+\noindent Question 1. How many hospitals filed more than one report in the same year? Show your answer as a line graph of the number of hospitals over time.<br>
+
+```{r}
+#| echo: false
+report_counts <- duplicate.hcris %>%
+  group_by(fyear) %>%
+  summarise(num_hospitals = n_distinct(provider_number))
+
+q1 <- ggplot(report_counts, aes(x = fyear, y = num_hospitals)) +
+  geom_line() +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),  
+    axis.title = element_text(size = 12),  
+    axis.text = element_text(size = 10),  
+    panel.grid = element_blank()) +
+   labs(
+    title = "Number of Hospitals Filing More than One Report per Year",
+    x = "Fiscal Year",
+    y = "Number of Hospitals")
+
+q1
+``` 
+\vspace{1cm}
+
+\newpage
+\noindent Question 2. After removing/combining multiple reports, how many unique hospital IDs exist in the data?
+
+```{r}
+#| echo: false
+unique_hospital_count <- final.hcris.data %>%
+  group_by(year) %>%
+  summarise(num_unique_providers = n_distinct(provider_number), .groups = 'drop')
+
+library(knitr)
+
+kable(unique_hospital_count, 
+      col.names = c("Year", "Unique Providers"),
+      caption = "Unique Hospital IDs per Year")
+```
+
+\newpage
+
+\noindent Question 3. What is the distribution of total charges in each year? Show your results with a “violin” plot.
+
+```{r}
+#| echo: false
+q3 <- ggplot(final.hcris.data, aes(x = fyear, y = log(tot_charges))) +
+  geom_violin(fill = "pink", color = "darkblue") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),  
+    axis.title = element_text(size = 10),  
+    axis.text = element_text(size = 5),  
+    panel.grid = element_blank()) +
+   labs(
+    title = "Distribution of Total Charges by Year",
+    x = "Year",
+    y = "Log of Total Charges")
+
+q3
+```
+
+\newpage
+\noindent Question 4. What is the distribution of estimated prices in each year? Present your results with a violin plot.
+
+```{r}
+#| echo: false
+final.hcris.data <- final.hcris.data %>%
+    mutate(discount_factor = 1 - tot_discounts / tot_charges)
+
+final.hcris.data <- final.hcris.data %>%
+    mutate(price_num = (ip_charges + icu_charges + ancillary_charges) * discount_factor - tot_mcare_payment)
+
+final.hcris.data <- final.hcris.data %>%
+    mutate(price_denom = tot_discharges - mcare_discharges)
+
+final.hcris.data <- final.hcris.data %>%
+    mutate(price = price_num / price_denom)
+
+
+# Perform the filtering operation
+final.hcris.data <- final.hcris.data %>%
+    filter(price >= quantiles[1], price <= quantiles[2])
+
+# Print the number of rows after filtering
+print(nrow(final.hcris.data))
+
+quantiles <- quantile(final.hcris.data$price, c(0.01, 0.99), na.rm = TRUE)
+final.hcris.data <- final.hcris.data %>%
+    filter(price >= quantiles[1], price <= quantiles[2])
+
+final.hcris.data$fyear <- as.factor(final.hcris.data$fyear)
+
+q4 = ggplot(final.hcris.data, aes(x = fyear, y = price)) +
+    geom_violin(fill = "lightblue", color = "darkblue") +  
+    labs(
+        title = "Distribution of Estimated Prices by Year",
+        x = "Year",
+        y = "Estimated Price"
+    ) +
+    theme_minimal() +  
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+q4
+```
+\newpage
+
+# Estimating ATEs
+
+\noindent Question 5. Calculate the average price among penalized versus non-penalized hospitals.
+
+From my analysis, the average price among penalized hospitals is $9685 and $9323 among non-penalized hospitals. 
+
+\newpage
+\noindent Question 6. Split hospitals into quartiles based on bed size. Provide a table of the average price among treated/control groups for each quartile.
+
+```{r}
+#| echo: false
+library(knitr)
+
+kable(quartile_summary, 
+      col.names = c("Bed Size", "No Penalty", "Penalty"),
+      caption = "Average Prices by Bed Quartile and Penalty")
+```
+
+\newpage
+\noindent Question 7. Find the average treatment effect using each of the following estimators, and present your results in a single table. 
+
+```{r}
+#| echo: false
+library(knitr)
+
+kable(q7, 
+      col.names = c("Method", "ATE", "SE"),
+      caption = "Average Treatment Effect Estimates")
+```
+
+\newpage
+# Question 8
+With these different treatment effect estimators, are the results similar, identical, very different?
+
+
+\newpage
+# Question 9
+Do you think you’ve estimated a causal effect of the penalty? Why or why not? (just a couple of sentences)
+
+
+\newpage
+# Question 10
+Briefly describe your experience working with these data (just a few sentences). Tell me one thing you learned and one thing that really aggravated or surprised you.
